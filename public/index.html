@@ -2754,6 +2754,7 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="scale">Scale</option>
                                 <option value="windowai">Window AI</option>
+                                <option value="bedrock">Amazon Bedrock</option>
                             </optgroup>
                         </select>
                         <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek">
@@ -3432,6 +3433,78 @@
                             <select id="model_01ai_select">
                             </select>
                         </div>
+
+
+                        <form id="bedrock_form" data-source="bedrock" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="AWS Region">Region</h4>
+                            <div class="flex-container">
+                                <input id="aws_bedrock_region" name="aws_bedrock_region" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_cohere"></div>
+                            </div>
+                            <div data-for="api_key_cohere" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+
+                            <h6>Before you access Amazon Bedrock, you need to set up IAM and Bedrock Access. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started-console.html">visit here.</a> </h6>
+                            <h6>If you are running ST on AWS, you don't need to fill out any AWS credentials as it automatically loaded from your server. </h6>
+
+                            <h4 data-i18n="AWS Access Key ID">AWS Access Key ID</h4>
+                            <div class="flex-container">
+                                <input id="api_key_aws_id" name="api_key_aws_id" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aws_id"></div>
+                            </div>
+                            <div data-for="api_key_cohere" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+
+                            <h4 data-i18n="AWS Secret Key">AWS Secret Access Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_aws_secret" name="api_key_aws_secret" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your secret key" data-i18n="[title]Clear your secret key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aws_secret"></div>
+                            </div>
+                            <div data-for="secret_key_aws" class="neutral_warning" data-i18n="For privacy reasons, your secret key will be hidden after you reload the page.">
+                                For privacy reasons, your secret key will be hidden after you reload the page.
+                            </div>
+
+                            <h4 data-i18n="AWS Secret Key">AWS Session Token (Option)</h4>
+                            <div class="flex-container">
+                                <input id="api_key_aws_session_token" name="api_key_aws_session_token" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your secret key" data-i18n="[title]Clear your secret key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aws_session_token"></div>
+                            </div>
+                            <div data-for="secret_key_aws" class="neutral_warning" data-i18n="For privacy reasons, your secret key will be hidden after you reload the page.">
+                                For privacy reasons, your secret key will be hidden after you reload the page.
+                            </div>
+
+
+
+                            <div>
+                                <h4 data-i18n="Bedrock Model">Amazon Bedrock Model</h4>
+                                <select id="model_bedrock_select">
+                                    <optgroup label="Anthropic">
+                                        <option value="anthropic.claude-3-7-sonnet-20250219-v1:0">Claude 3.7 Sonnet</option>
+                                        <option value="anthropic.claude-3-5-sonnet-20241022-v2:0">Claude 3.5 Sonnet v2</option>
+                                        <option value="anthropic.claude-3-5-haiku-20241022-v1:0">Claude 3.5 Haiku</option>
+                                    </optgroup>
+                                    <optgroup label="Amazon">
+                                        <option value="amazon.nova-pro-v1:0">Amazon Nova Pro</option>
+                                        <option value="amazon.nova-lite-v1:0">Amazon Nova Lite</option>
+                                        <option value="amazon.nova-micro-v1:0">Amazon Nova Micro</option>
+                                    </optgroup>
+                                    <optgroup label="Cohere">
+                                        <option value="cohere.command-r-v1:0">Command R</option>
+                                        <option value="cohere.command-r-plus-v1:0">Command R+</option>
+                                    </optgroup>
+                                    <optgroup label="DeepSeek">
+                                        <option value="deepseek.r1-v1:0">DeepSeek-R1</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </form>
+
+
+
+
+
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button menu_button_icon" data-i18n="Cancel">Cancel</div>
