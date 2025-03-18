@@ -185,6 +185,7 @@ export const chat_completion_sources = {
     BLOCKENTROPY: 'blockentropy',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    BEDROCK: 'bedrock'
 };
 
 const character_names_behavior = {
@@ -429,6 +430,7 @@ const oai_settings = {
     zerooneai_model: 'yi-large',
     blockentropy_model: 'be-70b-base-llama3.1',
     deepseek_model: 'deepseek-chat',
+    bedrock_model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1632,6 +1634,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
             return oai_settings.deepseek_model;
+        case chat_completion_sources.BEDROCK:
+            return oai_settings.bedrock_model;
         default:
             throw new Error(`Unknown chat completion source: ${activeSource}`);
     }
