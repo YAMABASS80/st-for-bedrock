@@ -3506,6 +3506,7 @@ async function getStatusOpen() {
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.GROQ,
+        chat_completion_sources.BEDROCK
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4892,12 +4893,13 @@ async function onConnectButtonClick(e) {
     if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
         const api_key_aws_id = String($('#api_key_aws_id').val()).trim();
         const api_key_aws_secret = String($('#api_key_aws_secret').val()).trim();
-        const api_key_aws_session_token = String($('#api_key_aws_session_token').val()).trim();
 
         // AWS Session Token is optional
         if (api_key_aws_id.length && api_key_aws_secret.length) {
             await writeSecret(SECRET_KEYS.AWS_KEY_ID, api_key_aws_id);
             await writeSecret(SECRET_KEYS.AWS_SECRET, api_key_aws_secret);
+
+            const api_key_aws_session_token = String($('#api_key_aws_session_token').val()).trim();
             if (api_key_aws_session_token.length) {
                 await writeSecret(SECRET_KEYS.AWS_SESSION_TOKEN, api_key_aws_session_token);
             }
