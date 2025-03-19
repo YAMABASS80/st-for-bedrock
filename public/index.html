@@ -3434,19 +3434,9 @@
                             </select>
                         </div>
 
-
                         <form id="bedrock_form" data-source="bedrock" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4 data-i18n="AWS Region">Region</h4>
-                            <div class="flex-container">
-                                <input id="aws_bedrock_region" name="aws_bedrock_region" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="aws_bedrock_region"></div>
-                            </div>
-                            <div data-for="aws_bedrock_region" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
-                                For privacy reasons, your API key will be hidden after you reload the page.
-                            </div>
-
-                            <h6>Before you access Amazon Bedrock, you need to set up IAM and Bedrock Access. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started-console.html">visit here.</a> </h6>
-                            <h6>If you are running ST on AWS, you don't need to fill out any AWS credentials as it automatically loaded from your server. </h6>
+                            <h6>Before you access Amazon Bedrock, you need to set up IAM and Bedrock Access. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started-console.html">visit here.</a>
+                            If you are running ST on AWS, you don't need to fill out any AWS credentials as it automatically loaded from your server. </h6>
 
                             <h4 data-i18n="AWS Access Key ID">AWS Access Key ID</h4>
                             <div class="flex-container">
@@ -3474,9 +3464,34 @@
                             <div data-for="api_key_aws_session_token" class="neutral_warning" data-i18n="For privacy reasons, your secret key will be hidden after you reload the page.">
                                 For privacy reasons, your secret key will be hidden after you reload the page.
                             </div>
+                            <div>
+                                <h4 data-i18n="Bedrock Region">AWS Region</h4>
+                                <h6>Make sure the model is supported at the AWS region. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html">visit here.</a></h6>
 
+                                <select id="region_bedrock_select">
+                                    <optgroup label="US">
+                                        <option value="us-east-1">🇺🇸N. Virginia</option>
+                                        <option value="us-west-2">🇺🇸Ohio</option>
+                                        <option value="us-west-2">🇺🇸Oregon</option>
+                                    </optgroup>
+                                    <optgroup label="Asia">
+                                        <option value="ap-southeast-1">🇸🇬Singapore</option>
+                                        <option value="ap-southeast-2">🇦🇺Sydney</option>
+                                        <option value="ap-northeast-1">🇯🇵Tokyo</option>
+                                        <option value="ap-northeast-2">🇰🇷Seoul</option>
+                                        <option value="ap-south-1">🇮🇳Mumbai</option>
+                                    </optgroup>
+                                    <optgroup label="Europe">
+                                        <option value="eu-west-1">🇮🇪Ireland</option>
+                                        <option value="eu-central-1">🇩🇪Frankfurt</option>
 
+                                    </optgroup>
+                                    <optgroup label="South America">
+                                        <option value="sa-east-1">🇧🇷São Paulo</option>
+                                    </optgroup>
 
+                                </select>
+                            </div>
                             <div>
                                 <h4 data-i18n="Bedrock Model">Amazon Bedrock Model</h4>
                                 <select id="model_bedrock_select">
