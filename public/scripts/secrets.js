@@ -42,9 +42,7 @@ export const SECRET_KEYS = {
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
     FALAI: 'api_key_falai',
-    AWS_KEY_ID: 'api_key_aws_id',
-    AWS_SECRET: 'api_key_aws_secret',
-    AWS_SESSION_TOKEN: 'api_key_aws_session_token'
+    AWS_CLI_PROFILE: 'aws_cli_profile',
 
 };
 
