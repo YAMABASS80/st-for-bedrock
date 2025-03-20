@@ -3435,35 +3435,18 @@
                         </div>
 
                         <form id="bedrock_form" data-source="bedrock" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h6>Before you access Amazon Bedrock, you need to set up IAM and Bedrock Access. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started-console.html">visit here.</a>
-                            If you are running ST on AWS, you don't need to fill out any AWS credentials as it automatically loaded from your server. </h6>
+                            <h5>Before you access Amazon Bedrock, you need to set up  <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started-console.html">IAM and Bedrock Access.</a>
+                            For the security purpose, we do not capture any AWS credential via this form. Instead, set up your AWS credential following <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html">AWS CLI mannaer</a></br>
+                            </h5>
 
-                            <h4 data-i18n="AWS Access Key ID">AWS Access Key ID</h4>
-                            <div class="flex-container">
-                                <input id="api_key_aws_id" name="api_key_aws_id" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aws_id"></div>
-                            </div>
-                            <div data-for="api_key_aws_id" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
-                                For privacy reasons, your API key will be hidden after you reload the page.
-                            </div>
+                            <h5>If you are running ST on AWS, use EC2 IAM role and keep everything empty.</h5>
 
-                            <h4 data-i18n="AWS Secret Key">AWS Secret Access Key</h4>
+                            <h4 data-i18n="AWS CLI Profile">AWS CLI Profile</h4>
                             <div class="flex-container">
-                                <input id="api_key_aws_secret" name="api_key_aws_secret" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Clear your secret key" data-i18n="[title]Clear your secret key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aws_secret"></div>
-                            </div>
-                            <div data-for="api_key_aws_secret" class="neutral_warning" data-i18n="For privacy reasons, your secret key will be hidden after you reload the page.">
-                                For privacy reasons, your secret key will be hidden after you reload the page.
+                                <input id="aws_cli_profile" name="aws_cli_profile" class="text_pole flex1" value="" type="text" autocomplete="off" placeholder="default">
+                                <div title="Clear your AWS profile" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="aws_cli_profile"></div>
                             </div>
 
-                            <h4 data-i18n="AWS Session Token">AWS Session Token (Option)</h4>
-                            <div class="flex-container">
-                                <input id="api_key_aws_session_token" name="api_key_aws_session_token" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Clear your secret key" data-i18n="[title]Clear your secret key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aws_session_token"></div>
-                            </div>
-                            <div data-for="api_key_aws_session_token" class="neutral_warning" data-i18n="For privacy reasons, your secret key will be hidden after you reload the page.">
-                                For privacy reasons, your secret key will be hidden after you reload the page.
-                            </div>
                             <div>
                                 <h4 data-i18n="Bedrock Region">AWS Region</h4>
                                 <h6>Make sure the model is supported at the AWS region. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html">visit here.</a></h6>
