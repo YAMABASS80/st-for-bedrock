@@ -41,6 +41,9 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 
+import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
+import { defaultProvider } from '@aws-sdk/credential-provider-node';
+
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
@@ -825,6 +828,150 @@ async function sendDeepSeekRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to Amazon Bedrock.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendBedrockRequest(request, response) {
+
+    /**
+     * Converts an array of message objects to a format with nested content structure.
+     *
+     * @param {Array<{role: string, content: string}>} messages - The original array of message objects
+     * @returns {Array<import('@aws-sdk/client-bedrock-runtime').Message>} - The converted array with nested content
+     */
+    function convertToBedrockMessages(messages) {
+        return messages.map(item => {
+            const bedrockRole = item.role === 'assistant' ? 'assistant' : 'user';
+            return {
+                role: bedrockRole,
+                content: [
+                    {
+                        text: item.content,
+                    },
+                ],
+            };
+        });
+    }
+    /**
+     * Pipe a fetch() response to an Express.js Response, including status code.
+     * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
+     * @param {Express.Response} to The Express response to pipe to.
+     */
+    async function forwardBedrockStreamResponse(from, to) {
+        // to.header('Content-Type', 'text/event-stream');
+        // to.header('Cache-Control', 'no-cache');
+        // to.header('Connection', 'keep-alive');
+        // to.flushHeaders(); // flush the headers to establish SSE with client
+
+        for await (const event of from.body) {
+            // let respCode = from.$metadata.httpStatusCode;
+
+            if (event.chunk && event.chunk.bytes) {
+                const chunk = Buffer.from(event.chunk.bytes).toString("utf-8");
+                to.write(`data: ${chunk}\n\n`);
+            } else if (
+                event.internalServerException ||
+                event.modelStreamErrorException ||
+                event.throttlingException ||
+                event.validationException
+            ) {
+                console.error(event);
+                break;
+            }
+        }
+
+        to.end()
+    }
+
+    const getRuntimeClient = (function() {
+        const client = {};
+        return function(region_name, profile) {
+            client[region_name] = new BedrockRuntimeClient({
+                region: region_name,
+                profile: profile,
+            });
+
+            return client[region_name];
+        };
+    })();
+
+    async function ConverselWithStreaming(region_name, profile, params) {
+        const command = new ConverseStreamCommand(params);
+        const data = await getRuntimeClient(region_name, profile).send(command);
+
+        return data;
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    // Amazon Bedrock and AWS region
+    //  request.body.model includes AWS region and Bedrock model ID combined with '#'
+    //  e.g) us-west-2#amazon.nova-micro-v1:0
+    const region = request.body.model.split('#')[0];
+    const model = request.body.model.split('#')[1];
+
+    const messages = convertToBedrockMessages(request.body.messages);
+
+    const profile = readSecret(request.user.directories, SECRET_KEYS.AWS_CLI_PROFILE);
+    console.debug(`Using AWS CLI profile: ${profile}`);
+    console.debug(request.body);
+
+    try {
+        const bedrockClient = new BedrockRuntimeClient({
+            region: region,
+            credentials: defaultProvider({ profile: profile }),
+        });
+        const converseStreamCommand = new ConverseStreamCommand({
+            modelId: model,
+            messages: messages,
+            inferenceConfig: {
+                maxTokens: request.body.max_tokens,
+                topP: request.body.top_p,
+                temperature: request.body.temperature,
+            },
+        });
+        const converseOutput = await bedrockClient.send(converseStreamCommand);
+
+        if (converseOutput.stream) {
+            response.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Transfer-Encoding': 'chunked',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            });
+            for await (const item of converseOutput.stream) {
+                if (item.contentBlockDelta) {
+
+                    console.debug(item.contentBlockDelta.delta?.text);
+                    let chunk = {};
+                    chunk = {
+                        data: {
+                            text: item.contentBlockDelta.delta?.text,
+                        },
+                    };
+                    response.write(JSON.stringify(chunk) + '\n');
+                    console.log(chunk);
+                }
+            }
+            response.end();
+        }
+
+    } catch (error) {
+        console.error(error);
+        if (error.name === 'ValidationException') {
+            return response.status(400).send({ error: true, message: 'Amazon Bedrock request error' });
+        } else if (error.name === 'CredentialsProviderError') {
+            return response.status(400).send({ error: true, message: 'No AWS credential found.' });
+        }
+        return response.status(500).send({ error: true, message: 'Uncaught Exception' });
+    }
+}
 
 export const router = express.Router();
 
@@ -873,6 +1020,9 @@ router.post('/status', async function (request, response_getstatus_openai) {
         api_url = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', ''));
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        headers = {};
+        console.log('Amazon Bedrock is active.');
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -1040,6 +1190,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.BEDROCK: return sendBedrockRequest(request, response);
     }
 
     let apiUrl;
