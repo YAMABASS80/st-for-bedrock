@@ -854,55 +854,6 @@ async function sendBedrockRequest(request, response) {
             };
         });
     }
-    /**
-     * Pipe a fetch() response to an Express.js Response, including status code.
-     * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
-     * @param {Express.Response} to The Express response to pipe to.
-     */
-    async function forwardBedrockStreamResponse(from, to) {
-        // to.header('Content-Type', 'text/event-stream');
-        // to.header('Cache-Control', 'no-cache');
-        // to.header('Connection', 'keep-alive');
-        // to.flushHeaders(); // flush the headers to establish SSE with client
-
-        for await (const event of from.body) {
-            // let respCode = from.$metadata.httpStatusCode;
-
-            if (event.chunk && event.chunk.bytes) {
-                const chunk = Buffer.from(event.chunk.bytes).toString("utf-8");
-                to.write(`data: ${chunk}\n\n`);
-            } else if (
-                event.internalServerException ||
-                event.modelStreamErrorException ||
-                event.throttlingException ||
-                event.validationException
-            ) {
-                console.error(event);
-                break;
-            }
-        }
-
-        to.end()
-    }
-
-    const getRuntimeClient = (function() {
-        const client = {};
-        return function(region_name, profile) {
-            client[region_name] = new BedrockRuntimeClient({
-                region: region_name,
-                profile: profile,
-            });
-
-            return client[region_name];
-        };
-    })();
-
-    async function ConverselWithStreaming(region_name, profile, params) {
-        const command = new ConverseStreamCommand(params);
-        const data = await getRuntimeClient(region_name, profile).send(command);
-
-        return data;
-    }
 
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
@@ -940,7 +891,7 @@ async function sendBedrockRequest(request, response) {
 
         if (converseOutput.stream) {
             response.writeHead(200, {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/event-stream',
                 'Transfer-Encoding': 'chunked',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
@@ -949,13 +900,22 @@ async function sendBedrockRequest(request, response) {
                 if (item.contentBlockDelta) {
 
                     console.debug(item.contentBlockDelta.delta?.text);
-                    let chunk = {};
-                    chunk = {
-                        data: {
-                            text: item.contentBlockDelta.delta?.text,
+
+                    /**
+                     * Dependency! public/scripts/sse-stream.js praseStreamData() expects definite model response.
+                     * Hence we mimic Claude response here.
+                     * data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"something"}}
+                     **/
+                    let chunk = {
+                        type: 'content_block_delta',
+                        index: 0,
+                        delta: {
+                            type: 'text_delta',
+                            text: '',
                         },
                     };
-                    response.write(JSON.stringify(chunk) + '\n');
+                    chunk.delta.text = item.contentBlockDelta.delta?.text || '';
+                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
                     console.log(chunk);
                 }
             }
