@@ -185,7 +185,7 @@ export const chat_completion_sources = {
     BLOCKENTROPY: 'blockentropy',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
-    BEDROCK: 'bedrock'
+    BEDROCK: 'bedrock',
 };
 
 const character_names_behavior = {
@@ -1975,6 +1975,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const is01AI = oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
     const isNano = oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
     const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
+    const isBedrock = oai_settings.chat_completion_source == chat_completion_sources.BEDROCK;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2191,6 +2192,12 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.logit_bias;
     }
 
+    if (isBedrock) {
+        // Add region context (region#model)
+        generate_data.model = oai_settings.bedrock_region + '#' + generate_data.model;
+    }
+
+
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
@@ -2299,6 +2306,8 @@ function getStreamingReply(data, state) {
                 '';
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
+    } else if (oai_settings.chat_completion_source === chat_completion_sources.BEDROCK) {
+        return data?.text || '';
     } else {
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
     }
@@ -4891,23 +4900,14 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
-        const api_key_aws_id = String($('#api_key_aws_id').val()).trim();
-        const api_key_aws_secret = String($('#api_key_aws_secret').val()).trim();
+        const aws_cli_profile = String($('#aws_cli_profile').val()).trim();
 
-        // AWS Session Token is optional
-        if (api_key_aws_id.length && api_key_aws_secret.length) {
-            await writeSecret(SECRET_KEYS.AWS_KEY_ID, api_key_aws_id);
-            await writeSecret(SECRET_KEYS.AWS_SECRET, api_key_aws_secret);
-
-            const api_key_aws_session_token = String($('#api_key_aws_session_token').val()).trim();
-            if (api_key_aws_session_token.length) {
-                await writeSecret(SECRET_KEYS.AWS_SESSION_TOKEN, api_key_aws_session_token);
-            }
-
+        if (aws_cli_profile.length) {
+            await writeSecret(SECRET_KEYS.AWS_CLI_PROFILE, aws_cli_profile);
         }
 
-        if (!secret_state[SECRET_KEYS.AWS_KEY_ID] && !secret_state[SECRET_KEYS.AWS_SECRET]) {
-            console.log('No secret key saved for Amazon Bedrock');
+        if (!secret_state[SECRET_KEYS.AWS_CLI_PROFILE]) {
+            console.log('No AWS profile provided.');
             return;
         }
     }
@@ -4973,8 +4973,6 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
         $('#model_bedrock_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
         $('#region_bedrock_select').trigger('change');
     }
     $('[data-source]').each(function () {
