@@ -176,6 +176,7 @@ export const CHAT_COMPLETION_SOURCES = {
     BLOCKENTROPY: 'blockentropy',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    BEDROCK: 'bedrock',
 };
 
 /**
