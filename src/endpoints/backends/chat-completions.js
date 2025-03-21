@@ -43,6 +43,7 @@ import {
 
 import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
+import { convertToBedrockMessages, getBedrockClient, bedrockErrorHandler } from '../bedrock.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -835,26 +836,6 @@ async function sendDeepSeekRequest(request, response) {
  */
 async function sendBedrockRequest(request, response) {
 
-    /**
-     * Converts an array of message objects to a format with nested content structure.
-     *
-     * @param {Array<{role: string, content: string}>} messages - The original array of message objects
-     * @returns {Array<import('@aws-sdk/client-bedrock-runtime').Message>} - The converted array with nested content
-     */
-    function convertToBedrockMessages(messages) {
-        return messages.map(item => {
-            const bedrockRole = item.role === 'assistant' ? 'assistant' : 'user';
-            return {
-                role: bedrockRole,
-                content: [
-                    {
-                        text: item.content,
-                    },
-                ],
-            };
-        });
-    }
-
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
@@ -874,10 +855,7 @@ async function sendBedrockRequest(request, response) {
     console.debug(request.body);
 
     try {
-        const bedrockClient = new BedrockRuntimeClient({
-            region: region,
-            credentials: defaultProvider({ profile: profile }),
-        });
+        const bedrockClient = getBedrockClient(region, profile);
         const converseStreamCommand = new ConverseStreamCommand({
             modelId: model,
             messages: messages,
@@ -916,15 +894,8 @@ async function sendBedrockRequest(request, response) {
             response.end();
         }
 
-
     } catch (error) {
-        console.error(error);
-        if (error.name === 'ValidationException') {
-            return response.status(400).send({ error: true, message: 'Amazon Bedrock request error' });
-        } else if (error.name === 'CredentialsProviderError') {
-            return response.status(400).send({ error: true, message: 'No AWS credential found.' });
-        }
-        return response.status(500).send({ error: true, message: 'Uncaught Exception' });
+        bedrockErrorHandler(error, response);
     }
 }
 
@@ -978,6 +949,8 @@ router.post('/status', async function (request, response_getstatus_openai) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
         headers = {};
         console.log('Amazon Bedrock is active.');
+        // Stub
+        return response_getstatus_openai.status(200).send({ message: 'OK' });
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
