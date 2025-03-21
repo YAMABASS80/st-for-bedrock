@@ -860,49 +860,56 @@ async function sendBedrockRequest(request, response) {
     console.debug(`Using AWS CLI profile: ${profile}`);
     console.debug(request.body);
 
-    try {
-        const bedrockRuntimeClient = getBedrockRuntimeClient(region, profile);
-        const converseStreamCommand = new ConverseStreamCommand({
-            modelId: model,
-            messages: messages,
-            inferenceConfig: {
-                maxTokens: request.body.max_tokens,
-                topP: request.body.top_p,
-                temperature: request.body.temperature,
-            },
-        });
-        const converseOutput = await bedrockRuntimeClient.send(converseStreamCommand);
+    const bedrockRuntimeClient = getBedrockRuntimeClient(region, profile);
 
-        if (converseOutput.stream) {
-            response.writeHead(200, {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
+    if ( request.body.stream ) {
+        try {
+            const converseStreamCommand = new ConverseStreamCommand({
+                modelId: model,
+                messages: messages,
+                inferenceConfig: {
+                    maxTokens: request.body.max_tokens,
+                    topP: request.body.top_p,
+                    temperature: request.body.temperature,
+                },
             });
+            const converseOutput = await bedrockRuntimeClient.send(converseStreamCommand);
 
-            for await (const item of converseOutput.stream) {
-                if (item.contentBlockDelta && item.contentBlockDelta.delta?.text) {
-                    const chunk = {
-                        content: item.contentBlockDelta.delta.text,
-                    };
+            if (converseOutput.stream) {
+                response.writeHead(200, {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                });
 
-                    /**
-                     * Important: This data shape is highly dependent on the client-side implementation.
-                     * Be sure that getStreamingReply() function in public/script/openai.js is compatible with this data shape.
-                     * If you don't want to break anything, keep the data structure { content: text }
-                     */
-                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    response.flushHeaders();
+                for await (const item of converseOutput.stream) {
+                    if (item.contentBlockDelta && item.contentBlockDelta.delta?.text) {
+                        const chunk = {
+                            content: item.contentBlockDelta.delta.text,
+                        };
+
+                        /**
+                         * Important: This data shape is highly dependent on the client-side implementation.
+                         * Be sure that getStreamingReply() function in public/script/openai.js is compatible with this data shape.
+                         * If you don't want to break anything, keep the data structure { content: text }
+                         */
+                        response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                        response.flushHeaders();
+                    }
                 }
+
+                response.write('data: [DONE]\n\n');
+                response.end();
             }
 
-            response.write('data: [DONE]\n\n');
-            response.end();
+        } catch (error) {
+            bedrockErrorHandler(error, response);
         }
-
-    } catch (error) {
-        bedrockErrorHandler(error, response);
+    } else {
+        response.status(200).send({ status: 'OK' });
+        console.log('Non-streaming request');
     }
+
 }
 
 /**
