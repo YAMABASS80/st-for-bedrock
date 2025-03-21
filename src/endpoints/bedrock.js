@@ -1,4 +1,5 @@
-import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime'
+import { BedrockClient } from '@aws-sdk/client-bedrock';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
 /**
@@ -21,14 +22,29 @@ export function convertToBedrockMessages(messages) {
     });
 }
 /**
- * Create bedrock runtime.
+ * Create Bedrock runtime client.
  *
  * @param {string} region - AWS region name
  * @param {string} profile - AWS CLI profile name
  * @returns {import('@aws-sdk/client-bedrock-runtime').BedrockRuntimeClient} - AWS Bedrock Runtime Client
  */
+export function getBedrockRuntimeClient(region, profile){
+    const bedrockRuntimeClient = new BedrockRuntimeClient({
+        region: region,
+        credentials: defaultProvider({ profile: profile }),
+    });
+    return bedrockRuntimeClient;
+}
+
+/**
+ * Create Bedrock client.
+ *
+ * @param {string} region - AWS region name
+ * @param {string} profile - AWS CLI profile name
+ * @returns {import('@aws-sdk/client-bedrock').BedrockClient} - AWS Bedrock Runtime Client
+ */
 export function getBedrockClient(region, profile){
-    const bedrockClient = new BedrockRuntimeClient({
+    const bedrockClient = new BedrockClient({
         region: region,
         credentials: defaultProvider({ profile: profile }),
     });
@@ -43,6 +59,12 @@ export function getBedrockClient(region, profile){
  */
 export function bedrockErrorHandler(error, response){
     console.error('Error:', error);
+
+    // Check if the response has already been sent
+    if (response.headersSent) {
+        return;
+    }
+
     if (error.name === 'ValidationException') {
         return response.status(400).send({ error: true, message: 'Amazon Bedrock request error' });
     } else if (error.name === 'CredentialsProviderError') {

@@ -41,9 +41,15 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 
-import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
-import { defaultProvider } from '@aws-sdk/credential-provider-node';
-import { convertToBedrockMessages, getBedrockClient, bedrockErrorHandler } from '../bedrock.js';
+import { ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
+import { GetFoundationModelCommand } from '@aws-sdk/client-bedrock';
+
+import {
+    convertToBedrockMessages,
+    getBedrockClient,
+    getBedrockRuntimeClient,
+    bedrockErrorHandler,
+} from '../bedrock.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -855,7 +861,7 @@ async function sendBedrockRequest(request, response) {
     console.debug(request.body);
 
     try {
-        const bedrockClient = getBedrockClient(region, profile);
+        const bedrockRuntimeClient = getBedrockRuntimeClient(region, profile);
         const converseStreamCommand = new ConverseStreamCommand({
             modelId: model,
             messages: messages,
@@ -865,7 +871,7 @@ async function sendBedrockRequest(request, response) {
                 temperature: request.body.temperature,
             },
         });
-        const converseOutput = await bedrockClient.send(converseStreamCommand);
+        const converseOutput = await bedrockRuntimeClient.send(converseStreamCommand);
 
         if (converseOutput.stream) {
             response.writeHead(200, {
@@ -898,6 +904,36 @@ async function sendBedrockRequest(request, response) {
         bedrockErrorHandler(error, response);
     }
 }
+
+/**
+ * Check if the Amazon Bedrock is available.
+ * @param {express.Request} request Express request
+ * @param {import('express').Response} response The Express response object
+*/
+async function getBedrockStatus(request, response) {
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+    const profile = readSecret(request.user.directories, SECRET_KEYS.AWS_CLI_PROFILE);
+    const region = request.body.bedrock_region;
+    const model = request.body.bedrock_model;
+    const bedrockClient = getBedrockClient(region, profile);
+    const getFoundtationCommand = new GetFoundationModelCommand({
+        modelIdentifier: model,
+    });
+    try {
+        const foundationOutput = await bedrockClient.send(getFoundtationCommand);
+        console.log(foundationOutput);
+        response.status(200).send({ message: 'OK', model_detail: foundationOutput });
+
+    } catch (error) {
+        response.status(error.$metadata.httpStatusCode).send({ error: true, reason: error.message });
+    }
+}
+
 
 export const router = express.Router();
 
@@ -947,10 +983,8 @@ router.post('/status', async function (request, response_getstatus_openai) {
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
-        headers = {};
-        console.log('Amazon Bedrock is active.');
-        // Stub
-        return response_getstatus_openai.status(200).send({ message: 'OK' });
+        return await getBedrockStatus(request, response_getstatus_openai);
+
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
