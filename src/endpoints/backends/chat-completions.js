@@ -895,33 +895,23 @@ async function sendBedrockRequest(request, response) {
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
             });
-            const preamble = JSON.parse('{"type":"message_start","message":{"id":"msg_bdrk_01ErkDBULtboqg4Xqfoh3gYH","type":"message","role":"assistant","model":"claude-3-5-sonnet-20241022","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1328,"output_tokens":2}}}');
-            response.write(`data: ${JSON.stringify(preamble)}\n\n`);
-            const intialMessage = JSON.parse('{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}');
-            response.write(`data: ${JSON.stringify(intialMessage)}\n\n`);
-            response.flushHeaders();
 
             for await (const item of converseOutput.stream) {
 
                 if (item.contentBlockDelta && item.contentBlockDelta.delta?.text) {
                     const chunk = {
-                        type: 'content_block_delta',
-                        index: 0,
-                        delta: {
-                            type: 'text_delta',
-                            text: item.contentBlockDelta.delta.text,
-                        },
+                        content: item.contentBlockDelta.delta.text,
                     };
-                    // const chunk = {
-                    //     content: item.contentBlockDelta.delta.text,
-                    // };
+                    /**
+                     * Important: This data shape is highly dependent on the client-side implementation.
+                     * Be sure that getStreamingReply() function in public/script/openai.js is compatible with this data shape.
+                     * If you change the data shape here, you must also change the client-side implementation.
+                     */
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
                     response.flushHeaders();
                 }
             }
-            const stop = JSON.parse('{"type":"content_block_stop","index":0}');
-            response.write(`data: ${JSON.stringify(stop)}\n\n`);
-            response.end();
+
         }
 
     } catch (error) {

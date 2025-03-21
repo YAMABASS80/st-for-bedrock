@@ -2307,7 +2307,9 @@ function getStreamingReply(data, state) {
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
     } else if (oai_settings.chat_completion_source === chat_completion_sources.BEDROCK) {
-        return data?.text || '';
+        // Expect data to be like data.content = 'text'
+        const text = data?.content ?? '';
+        return text;
     } else {
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
     }
