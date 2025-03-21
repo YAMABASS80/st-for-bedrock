@@ -905,7 +905,7 @@ async function sendBedrockRequest(request, response) {
                     /**
                      * Important: This data shape is highly dependent on the client-side implementation.
                      * Be sure that getStreamingReply() function in public/script/openai.js is compatible with this data shape.
-                     * If you don't break anything, keep the data structure { content: text }
+                     * If you don't want to break anything, keep the data structure { content: text }
                      */
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
                     response.flushHeaders();
