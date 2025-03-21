@@ -66,9 +66,9 @@ export function bedrockErrorHandler(error, response){
     }
 
     if (error.name === 'ValidationException') {
-        return response.status(400).send({ error: true, message: 'Amazon Bedrock request error' });
+        return response.status(400).send({ error: true, statusText: 'Amazon Bedrock request error' });
     } else if (error.name === 'CredentialsProviderError') {
-        return response.status(400).send({ error: true, message: 'No AWS credential found.' });
+        return response.status(400).send({ error: true, statusText: 'No AWS credential found.' });
     }
-    return response.status(500).send({ error: true, message: 'Uncaught Exception' });
+    return response.status(500).send({ error: true, statusText: 'Uncaught Exception' });
 }

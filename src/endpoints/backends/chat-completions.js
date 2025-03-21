@@ -963,7 +963,7 @@ async function getBedrockStatus(request, response) {
         response.status(200).send({ message: 'OK', model_detail: foundationOutput });
 
     } catch (error) {
-        response.status(error.$metadata.httpStatusCode).send({ error: true, reason: error.message });
+        response.status(error.$metadata.httpStatusCode).send({ error: true, statusText: error.message });
     }
 }
 
