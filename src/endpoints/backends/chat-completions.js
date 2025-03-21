@@ -41,7 +41,7 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 
-import { ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
+import { ConverseStreamCommand, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { GetFoundationModelCommand } from '@aws-sdk/client-bedrock';
 
 import {
@@ -906,8 +906,34 @@ async function sendBedrockRequest(request, response) {
             bedrockErrorHandler(error, response);
         }
     } else {
-        response.status(200).send({ status: 'OK' });
         console.log('Non-streaming request');
+        /**
+         *  Responed as OpenAI-like format, because the client-side implementation is based on OpenAI API.
+         *  example) { choices: [ { message: { content: 'Hello, how can I help you?' } } ] }
+         */
+        try {
+            const converseCommand = new ConverseCommand({
+                modelId: model,
+                messages: messages,
+                inferenceConfig: {
+                    maxTokens: request.body.max_tokens,
+                    topP: request.body.top_p,
+                    temperature: request.body.temperature,
+                },
+            });
+            const converseOutput = await bedrockRuntimeClient.send(converseCommand);
+
+            console.log(converseOutput);
+            if (converseOutput.output?.message?.content) {
+                const text = converseOutput.output?.message?.content[0]?.text || '';
+                response.status(200).send({ choices: [
+                    { message: { content: text } },
+                ] });
+            }
+
+        } catch (error) {
+            bedrockErrorHandler(error, response);
+        }
     }
 
 }

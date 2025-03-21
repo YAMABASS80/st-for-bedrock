@@ -2330,6 +2330,7 @@ function parseChatCompletionLogprobs(data) {
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.DEEPSEEK:
         case chat_completion_sources.CUSTOM:
+        case chat_completion_sources.BEDROCK:
             if (!data.choices?.length) {
                 return null;
             }
@@ -4999,6 +5000,7 @@ async function testApiConnection() {
         toastr.success(t`API connection successful!`);
     }
     catch (err) {
+        console.error(err);
         toastr.error(t`Could not get a reply from API. Check your connection settings / API key and try again.`);
     }
 }
