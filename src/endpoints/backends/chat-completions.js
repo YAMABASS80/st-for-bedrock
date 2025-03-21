@@ -892,33 +892,35 @@ async function sendBedrockRequest(request, response) {
         if (converseOutput.stream) {
             response.writeHead(200, {
                 'Content-Type': 'text/event-stream',
-                'Transfer-Encoding': 'chunked',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
             });
+            const preamble = JSON.parse('{"type":"message_start","message":{"id":"msg_bdrk_01ErkDBULtboqg4Xqfoh3gYH","type":"message","role":"assistant","model":"claude-3-5-sonnet-20241022","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1328,"output_tokens":2}}}');
+            response.write(`data: ${JSON.stringify(preamble)}\n\n`);
+            const intialMessage = JSON.parse('{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}');
+            response.write(`data: ${JSON.stringify(intialMessage)}\n\n`);
+            response.flushHeaders();
+
             for await (const item of converseOutput.stream) {
-                if (item.contentBlockDelta) {
 
-                    console.debug(item.contentBlockDelta.delta?.text);
-
-                    /**
-                     * Dependency! public/scripts/sse-stream.js praseStreamData() expects definite model response.
-                     * Hence we mimic Claude response here.
-                     * data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"something"}}
-                     **/
-                    let chunk = {
+                if (item.contentBlockDelta && item.contentBlockDelta.delta?.text) {
+                    const chunk = {
                         type: 'content_block_delta',
                         index: 0,
                         delta: {
                             type: 'text_delta',
-                            text: '',
+                            text: item.contentBlockDelta.delta.text,
                         },
                     };
-                    chunk.delta.text = item.contentBlockDelta.delta?.text || '';
+                    // const chunk = {
+                    //     content: item.contentBlockDelta.delta.text,
+                    // };
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    console.log(chunk);
+                    response.flushHeaders();
                 }
             }
+            const stop = JSON.parse('{"type":"content_block_stop","index":0}');
+            response.write(`data: ${JSON.stringify(stop)}\n\n`);
             response.end();
         }
 
