@@ -3517,7 +3517,6 @@ async function getStatusOpen() {
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.GROQ,
-        chat_completion_sources.BEDROCK
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -3547,6 +3546,10 @@ async function getStatusOpen() {
         data.custom_include_headers = oai_settings.custom_include_headers;
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.BEDROCK) {
+        data.bedrock_region = oai_settings.bedrock_region;
+        data.bedrock_model = oai_settings.bedrock_model;
+    }
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
         setOnlineStatus('Status check bypassed');
