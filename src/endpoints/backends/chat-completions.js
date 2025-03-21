@@ -897,22 +897,25 @@ async function sendBedrockRequest(request, response) {
             });
 
             for await (const item of converseOutput.stream) {
-
                 if (item.contentBlockDelta && item.contentBlockDelta.delta?.text) {
                     const chunk = {
                         content: item.contentBlockDelta.delta.text,
                     };
+
                     /**
                      * Important: This data shape is highly dependent on the client-side implementation.
                      * Be sure that getStreamingReply() function in public/script/openai.js is compatible with this data shape.
-                     * If you change the data shape here, you must also change the client-side implementation.
+                     * If you don't break anything, keep the data structure { content: text }
                      */
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
                     response.flushHeaders();
                 }
             }
 
+            response.write('data: [DONE]\n\n');
+            response.end();
         }
+
 
     } catch (error) {
         console.error(error);
