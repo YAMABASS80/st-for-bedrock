@@ -309,6 +309,7 @@ export const settingsToUpdate = {
     request_images: ['#openai_request_images', 'request_images', true],
     bedrock_model: ['#model_bedrock_select', 'bedrock_model', false],
     bedrock_region: ['#region_bedrock_select', 'bedrock_region', false],
+    bedrock_cross_region_inference: ['#bedrock_cross_region_inference', 'bedrock_cross_region_inference', true],
 };
 
 const default_settings = {
@@ -353,6 +354,7 @@ const default_settings = {
     deepseek_model: 'deepseek-chat',
     bedrock_model: 'anthropic.claude-3-7-sonnet-20250219-v1:0',
     bedrock_region: 'us-west-2',
+    bedrock_cross_region_inference: true,
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -436,6 +438,7 @@ const oai_settings = {
     deepseek_model: 'deepseek-chat',
     bedrock_model: 'anthropic.claude-3-7-sonnet-20250219-v1:0',
     bedrock_region: 'us-west-2',
+    bedrock_cross_region_inference: true,
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -2194,7 +2197,10 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isBedrock) {
         // Add region context (region#model)
-        generate_data.model = oai_settings.bedrock_region + '#' + generate_data.model;
+        generate_data.bedrock_model = oai_settings.bedrock_model;
+        generate_data.bedrock_region = oai_settings.bedrock_region;
+        generate_data['cross_region_inference'] = oai_settings.bedrock_cross_region_inference;
+        console.log(generate_data);
     }
 
 
@@ -3253,6 +3259,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.blockentropy_model = settings.blockentropy_model ?? default_settings.blockentropy_model;
     oai_settings.zerooneai_model = settings.zerooneai_model ?? default_settings.zerooneai_model;
     oai_settings.bedrock_model = settings.bedrock_model ?? default_settings.bedrock_model;
+    oai_settings.bedrock_region = settings.bedrock_region ?? default_settings.bedrock_region;
+    oai_settings.bedrock_cross_region_inference = settings.bedrock_cross_region_inference ?? default_settings.bedrock_cross_region_inference;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3342,6 +3350,7 @@ function loadOpenAISettings(data, settings) {
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#model_bedrock_select').val(oai_settings.bedrock_model);
     $('#region_bedrock_select').val(oai_settings.bedrock_region);
+    $('#bedrock_cross_region_inference').prop('checked', oai_settings.bedrock_cross_region_inference);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
@@ -3550,6 +3559,7 @@ async function getStatusOpen() {
     if (oai_settings.chat_completion_source === chat_completion_sources.BEDROCK) {
         data.bedrock_region = oai_settings.bedrock_region;
         data.bedrock_model = oai_settings.bedrock_model;
+        data.bedrock_cross_region_inference = oai_settings.bedrock_cross_region_inference;
     }
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
@@ -3628,6 +3638,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_model: settings.custom_model,
         bedrock_model: settings.bedrock_model,
         bedrock_region: settings.bedrock_region,
+        bedrock_cross_region_inference: settings.bedrock_cross_region_inference,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
         custom_exclude_body: settings.custom_exclude_body,
@@ -4359,7 +4370,6 @@ async function onModelChange() {
         $('#bedrock_region').val(value).trigger('input');
     }
 
-
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -4980,6 +4990,7 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
         $('#model_bedrock_select').trigger('change');
         $('#region_bedrock_select').trigger('change');
+        $('#bedrock_cross_region_inference').trigger('change');
     }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
@@ -5712,6 +5723,11 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#bedrock_cross_region_inference').on('input', function () {
+        oai_settings.bedrock_cross_region_inference = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $('#api_button_openai').on('click', onConnectButtonClick);
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
     $('#model_openai_select').on('change', onModelChange);
@@ -5733,6 +5749,8 @@ export function initOpenAI() {
     $('#model_blockentropy_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_bedrock_select').on('change', onModelChange);
+    $('#region_bedrock_select').on('change', onModelChange);
+    $('#bedrock_cross_region_inference').on('change', onModelChange);
     $('#region_bedrock_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);

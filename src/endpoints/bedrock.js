@@ -72,3 +72,20 @@ export function bedrockErrorHandler(error, response){
     }
     return response.status(500).send({ error: true, statusText: 'Uncaught Exception' });
 }
+
+/**
+ * Cross region inference model id converter.
+ *
+ * @param {string} region - The original array of message objects
+ * @param {string} model The Express response object
+ */
+
+export function getCrossRegionModelId(region, model){
+    const regionModelMap = {
+        us: 'us',
+        eu: 'eu',
+        ap: 'apac',
+    };
+    const regionPrefix = region.split('-')[0];
+    return regionModelMap[regionPrefix] + '.' + model;
+}

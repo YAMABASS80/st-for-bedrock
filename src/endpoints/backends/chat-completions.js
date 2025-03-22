@@ -49,6 +49,7 @@ import {
     getBedrockClient,
     getBedrockRuntimeClient,
     bedrockErrorHandler,
+    getCrossRegionModelId,
 } from '../bedrock.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
@@ -848,12 +849,17 @@ async function sendBedrockRequest(request, response) {
         controller.abort();
     });
 
-    // Amazon Bedrock and AWS region
-    //  request.body.model includes AWS region and Bedrock model ID combined with '#'
-    //  e.g) us-west-2#amazon.nova-micro-v1:0
-    const region = request.body.model.split('#')[0];
-    const model = request.body.model.split('#')[1];
+    const region = request.body.bedrock_region;
+    let model = request.body.bedrock_model;
 
+    const crossRegionInference = request.body.cross_region_inference;
+    if ( crossRegionInference ) {
+        console.debug('Cross-region inference enabled');
+        model = getCrossRegionModelId(region, model);
+        console.debug(`Cross-region inference model ID: ${model}`);
+    }
+
+    // Convert messages to Bedrock format
     const messages = convertToBedrockMessages(request.body.messages);
 
     const profile = readSecret(request.user.directories, SECRET_KEYS.AWS_CLI_PROFILE);
