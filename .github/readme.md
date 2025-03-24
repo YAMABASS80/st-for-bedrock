@@ -14,6 +14,16 @@ English | [German](readme-de_de.md) | [中文](readme-zh_cn.md) | [繁體中文]
 </div>
 
 ---
+# SillyTavern For Amazon Bedrock
+Hello Bedrockers! Good to see ya! This repository is a fork of SillyTavern for use with [Amazon Bedrock](https://aws.amazon.com/bedrock/?nc1=h_ls). This is a fork version that prioritizes integration with Amazon Bedrock, so you might not be able to use the latest ST features. (I’ll merge them if I feel like it) So, if you want to use LLM backends other than Amazon Bedrock, please use the original repository, dude.
+
+Yo, wanna know what models we support? Hold your horses! Check out the [DOCS](bedrock.md) right here! 
+And listen up, this is the usual deal: you’re on the hook for costs and security. Don’t come crying to me, I ain’t guaranteeing squat. And don’t bug me about AWS stuff either. That’s what AWS support is for, capisce?
+Feature requests? Bring ‘em on! (Whether I’ll actually implement them… well, that depends on my mood)
+
+Alright, have a blast!
+
+---
 
 SillyTavern provides a single unified interface for many LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral and more), a mobile-friendly layout, Visual Novel Mode, Automatic1111 & ComfyUI API image generation integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, more prompt options than you'd ever want or need, and endless growth potential via third-party extensions.
 
