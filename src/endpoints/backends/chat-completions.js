@@ -41,6 +41,16 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 
+import { GetFoundationModelCommand } from '@aws-sdk/client-bedrock';
+
+import {
+    getBedrockClient,
+    getBedrockRuntimeClient,
+    bedrockErrorHandler,
+    getConverseCommand,
+    getConverseStreamCommand,
+} from '../bedrock.js';
+
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
@@ -825,6 +835,160 @@ async function sendDeepSeekRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to Amazon Bedrock.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendBedrockRequest(request, response) {
+
+    console.debug('AWS Bedrock: HTTP request body dump.');
+    console.debug(JSON.stringify(request.body));
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    const region = request.body.bedrock_region;
+    let model = request.body.bedrock_model;
+
+    const crossRegionInference = request.body.cross_region_inference;
+    const profile = readSecret(request.user.directories, SECRET_KEYS.AWS_CLI_PROFILE);
+    console.debug(`Using AWS CLI profile: ${profile}`);
+    console.debug(request.body);
+
+    const bedrockRuntimeClient = getBedrockRuntimeClient(region, profile);
+
+    if (request.body.stream) {
+        console.debug('AWS Bedrock: Streaming request');
+
+        try {
+            const converseStreamCommand = getConverseStreamCommand(request)
+            const converseStreamCommandOutput = await bedrockRuntimeClient.send(converseStreamCommand);
+
+            if (converseStreamCommandOutput.stream) {
+                response.writeHead(200, {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                });
+
+
+                console.debug("AWS Bedrock: start streaming response.")
+                for await (const item of converseStreamCommandOutput.stream) {
+                    console.debug(`AWS Bedrock: streaming response item ${JSON.stringify(item)}`)
+                    if (item.contentBlockDelta && item.contentBlockDelta.delta?.text) {
+                        const chunk = {
+                            content: item.contentBlockDelta.delta.text,
+                        };
+
+                        /**
+                         * Important: This data shape is highly dependent on the client-side implementation.
+                         * Be sure that getStreamingReply() function in public/script/openai.js is compatible with this data shape.
+                         * If you don't want to break anything, keep the data structure { content: text }
+                         */
+                        console.debug(chunk)
+                        response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                        response.flushHeaders();
+                    }
+                }
+                response.write('data: [DONE]\n\n');
+                response.end();
+                console.debug("AWS Bedrock: End streaming response.")
+
+            } else {
+                const emptyResponse = {
+                    content: 'No response returned.'
+                }
+                response.write(`data: ${JSON.stringify(emptyResponse)}\n\n`);
+                response.end();
+                console.debug("AWS Bedrock: End streaming response.")
+            }
+
+        } catch (error) {
+            bedrockErrorHandler(error, response);
+        }
+    } else {
+        console.debug('AWS Bedrock: Non-streaming request');
+        /**
+         *  Responed as OpenAI-like format, because the client-side implementation is based on OpenAI API.
+         *  example) { choices: [ { message: { content: 'Hello, how can I help you?' } } ] }
+         */
+        try {
+
+            const converseCommand = getConverseCommand(request)
+            const converseCommandOutput = await bedrockRuntimeClient.send(converseCommand);
+
+            // console.debug('AWS Bedrock: converseCommandOutput Dump')
+            // console.debug(converseCommandOutput)
+
+            if (converseCommandOutput.output?.message?.content) {
+                const text = converseCommandOutput.output?.message?.content[0]?.text || '';
+                response.status(200).send({
+                    choices: [
+                        { message: { content: text } },
+                    ]
+                });
+            }
+
+        } catch (error) {
+            bedrockErrorHandler(error, response);
+        }
+    }
+
+}
+
+/**
+ * Check if the Amazon Bedrock is available.
+ * @param {express.Request} request Express request
+ * @param {import('express').Response} response The Express response object
+*/
+async function getBedrockStatus(request, response) {
+    console.debug('AWS Bedrock: HTTP request body dump.');
+    console.debug(JSON.stringify(request.body));
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+    const profile = readSecret(request.user.directories, SECRET_KEYS.AWS_CLI_PROFILE);
+    const region = request.body.bedrock_region;
+    const model = request.body.bedrock_model;
+    const crossRegionInference = request.body.bedrock_cross_region_inference;
+
+    const bedrockClient = getBedrockClient(region, profile);
+    const getFoundtationCommand = new GetFoundationModelCommand({
+        modelIdentifier: model,
+    });
+    try {
+        const getFoundtationCommandOutput = await bedrockClient.send(getFoundtationCommand)
+        console.debug(JSON.stringify(getFoundtationCommandOutput))
+
+        const inference_types_supported = getFoundtationCommandOutput.modelDetails?.inferenceTypesSupported?.[0]
+        console.debug(`AWS Bedrock: model inference type: ${inference_types_supported}`)
+        console.debug(`AWS Bedrock: cross region inference requested ${crossRegionInference}`)
+        // If the model is not on-demand and cross-region inference is not configured, an error occurs.
+        if (inference_types_supported !== 'ON_DEMAND' && crossRegionInference === false) {
+            const msg = 'AWS Bedrock: The model only supports cross region inference.'
+            console.error(msg)
+            response.status(400).send({ error: true, statusText: msg });
+        // If the model is on-demand and cross-region inference is configured, an error occurs.
+        } else if (inference_types_supported === 'ON_DEMAND' && crossRegionInference === true) {
+            const msg = 'AWS Bedrock: The model does not support cross region inference'
+            response.status(400).send({ error: true, statusText: msg });
+        } else {
+            const msg = 'AWS Bedrock: model status check success.'
+            response.status(200).send({ statusText: msg });
+        }
+
+    } catch (error) {
+        response.status(error.$metadata.httpStatusCode).send({ error: true, statusText: error.message });
+    }
+}
+
 
 export const router = express.Router();
 
@@ -873,6 +1037,9 @@ router.post('/status', async function (request, response_getstatus_openai) {
         api_url = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', ''));
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        return await getBedrockStatus(request, response_getstatus_openai);
+
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -1040,6 +1207,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.BEDROCK: return sendBedrockRequest(request, response);
     }
 
     let apiUrl;
