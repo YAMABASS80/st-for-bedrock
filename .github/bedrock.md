@@ -93,13 +93,15 @@ aws_secret_access_key=je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY
 
 In the setup screen, enter the profile name associated with your saved credentials in the "AWS CLI Profile" field.
 
-<img width="812" alt="image" src="https://github.com/user-attachments/assets/7fbb3b44-63a4-4bc3-b61d-54127e1c7f2a" />
 
+<img width="812" alt="image" src="https://github.com/user-attachments/assets/7fbb3b44-63a4-4bc3-b61d-54127e1c7f2a" />
 
 ## 1b. When Using on AWS Environments Like Amazon EC2, EKS, or ECS
 
 If you're using EC2 or containers with the policy created in step 1 attached, you don't need to configure anything.
 (The AWS CLI profile field can be left empty.)
+
+
 <img width="779" alt="image" src="https://github.com/user-attachments/assets/49752726-c03d-434f-94cd-9e4ee663e7ee" />
 
 
@@ -133,7 +135,7 @@ image
 
 After completing the settings, press the "Connect" button to verify the connection. If successful, you'll see a screen like this:
 
-image
+![image](https://github.com/user-attachments/assets/d80037d7-a6a5-481b-adec-6676ebbbb27c)
 
 If you can't connect, check the response to the request sent to the "/status" path in your browser's developer mode. ST is designed to return error messages.
 (I really couldn't figure out how to display error messages in the UI.)
@@ -161,7 +163,7 @@ Other parameters like "Frequency Penalty" or "Presence Penalty" are ignored for 
 For models that support enabling/disabling Reasoning, toggling this checkbox will switch Reasoning on or off.
 (Currently, only Claude 3.7 can do this...)
 
-image
+![image](https://github.com/user-attachments/assets/5ebaedb1-a1b1-4ad1-bd48-caaaca2bb944)
 
 Also, even if you enable Reasoning, it's not yet displayed in the UI, so please be aware.
 (Someone please create a rendering function)
