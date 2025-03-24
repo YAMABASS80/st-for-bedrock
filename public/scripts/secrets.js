@@ -42,6 +42,8 @@ export const SECRET_KEYS = {
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
     FALAI: 'api_key_falai',
+    AWS_CLI_PROFILE: 'aws_cli_profile',
+
 };
 
 const INPUT_MAP = {
@@ -77,6 +79,9 @@ const INPUT_MAP = {
     [SECRET_KEYS.NANOGPT]: '#api_key_nanogpt',
     [SECRET_KEYS.GENERIC]: '#api_key_generic',
     [SECRET_KEYS.DEEPSEEK]: '#api_key_deepseek',
+    [SECRET_KEYS.AWS_KEY_ID]: '#api_key_aws_id',
+    [SECRET_KEYS.AWS_SECRET]: '#api_key_aws_secret',
+    [SECRET_KEYS.AWS_SESSION_TOKEN]: '#api_key_aws_session_token',
 };
 
 async function clearSecret() {
