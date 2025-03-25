@@ -891,7 +891,7 @@ async function sendBedrockRequest(request, response) {
                          */
                         console.debug(chunk)
                         response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                        response.flushHeaders();
+                        response.flush()
                     }
                 }
                 response.write('data: [DONE]\n\n');
