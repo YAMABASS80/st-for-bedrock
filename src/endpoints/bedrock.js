@@ -3,13 +3,52 @@ import { BedrockClient } from '@aws-sdk/client-bedrock';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
 /**
+ * Extracts system messages from the array of message objects.
+ * Also handles the case where the first non-system message is an assistant message.
+ *
+ * @param {Array<{role: string, content: string}>} messages - The original array of message objects
+ * @returns {Array<{text: string}>} - The array of system content blocks
+ */
+export function extractSystemMessages(messages) {
+    // Extract system messages
+    const systemMessages = messages
+        .filter(item => item.role === 'system')
+        .map(item => ({
+            text: item.content
+        }));
+
+    // Verify the first non-system message
+    const nonSystemMessages = messages.filter(item => item.role !== 'system');
+
+    // If the first non-system message role is assistant, put it into system message as the system started conversation.
+    if (nonSystemMessages.length > 0 && nonSystemMessages[0].role === 'assistant') {
+        systemMessages.push({
+            text: `You started the conversation by saying "${nonSystemMessages[0].content}"`
+        });
+    }
+
+    return systemMessages;
+}
+
+/**
  * Converts an array of message objects to a format with nested content structure.
+ * Excludes system messages and handles the first assistant message specially.
  *
  * @param {Array<{role: string, content: string}>} messages - The original array of message objects
  * @returns {Array<import('@aws-sdk/client-bedrock-runtime').Message>} - The converted array with nested content
  */
 export function convertToBedrockMessages(messages) {
-    return messages.map(item => {
+    // Exclude system messages
+    const nonSystemMessages = messages.filter(item => item.role !== 'system');
+
+    // Exclude first non system message that is the role is assistant.
+    let startIndex = 0;
+    if (nonSystemMessages.length > 0 && nonSystemMessages[0].role === 'assistant') {
+        startIndex = 1;
+    }
+
+    // Convert the rest of messages
+    return nonSystemMessages.slice(startIndex).map(item => {
         const bedrockRole = item.role === 'assistant' ? 'assistant' : 'user';
         return {
             role: bedrockRole,
@@ -182,6 +221,7 @@ function getCommand(request) {
     let modelId = request.body.bedrock_model;
     const region = request.body.bedrock_region
     const messages = convertToBedrockMessages(request.body.messages);
+    const systemMessages = extractSystemMessages(request.body.messages);
     const crossRegionInference = request.body.cross_region_inference;
     const additionalRequestFields = getAdditionalRequestFields(request)
 
@@ -191,6 +231,7 @@ function getCommand(request) {
         modelId = getCrossRegionModelId(region, modelId)
     }
 
+    // システムメッセージがある場合は、オブジェクト作成時に含める
     const command = {
         modelId: modelId,
         messages: messages,
@@ -200,6 +241,7 @@ function getCommand(request) {
             temperature: request.body.temperature,
         },
         ...(additionalRequestFields != null && { additionalRequestFields }),
+        ...(systemMessages.length > 0 && { system: systemMessages }),
     }
 
 
