@@ -12,10 +12,6 @@
 || Nova Pro  |
 || Nova Lite  |
 || Nova Micro  |
-|Amazon||
-|| Nova Pro  |
-|| Nova Lite  |
-|| Nova Micro  |
 |Cohere||
 || Command R+  |
 || Command R |
@@ -23,6 +19,7 @@
 || Mistral Large 2 |
 || Mistral Large |
 || Mistral 8x7B instruct |
+|| Pixtral Large (25.02) |
 |Meta||
 || Llama 3.3 70B Instruct |
 || Llama 3.2 90B Vision Instruct |
@@ -34,8 +31,13 @@
 || Llama 3.1 8B Instruct |
 || Llama 3 70B Instruct|
 || Llama 3 8B Instruct |
+|| Llama 4 Maverick 17B Instruct|
+|| Llama 4 Scout 17B Instruct|
 |Deepseek||
 || DeepSeek-R1 |
+|Writer||
+|| Palmyra X4 |
+|| Palmyra X5 |
 
 
 ## Features Supported in SillyTavern
