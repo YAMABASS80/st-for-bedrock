@@ -9,6 +9,7 @@
 || Claude Sonnet 3.5 v2  |
 || Claude Haiku 3.5 v2  |
 |Amazon||
+|| Nova Premier  |
 || Nova Pro  |
 || Nova Lite  |
 || Nova Micro  |
